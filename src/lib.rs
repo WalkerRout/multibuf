@@ -8,11 +8,11 @@ mod buffer {
   }
 
   #[repr(transparent)]
-  pub struct StackBuf<T, const N: usize> {
+  pub struct Stack<T, const N: usize> {
     pub buf: [T; N],
   }
 
-  impl<T, const N: usize> Buffer<T> for StackBuf<T, N> {
+  impl<T, const N: usize> Buffer<T> for Stack<T, N> {
     fn as_slice(&self) -> &[T] {
       &self.buf
     }
@@ -22,11 +22,11 @@ mod buffer {
     }
   }
 
-  pub struct HeapBuf<T, const N: usize> {
+  pub struct Heap<T, const N: usize> {
     pub buf: Box<[T; N]>,
   }
 
-  impl<T, const N: usize> Buffer<T> for HeapBuf<T, N> {
+  impl<T, const N: usize> Buffer<T> for Heap<T, N> {
     fn as_slice(&self) -> &[T] {
       self.buf.as_slice()
     }
@@ -36,11 +36,11 @@ mod buffer {
     }
   }
 
-  pub struct ExternalBuf<'a, T, const N: usize> {
+  pub struct External<'a, T, const N: usize> {
     pub buf: &'a mut [T; N],
   }
 
-  impl<'a, T, const N: usize> Buffer<T> for ExternalBuf<'a, T, N> {
+  impl<'a, T, const N: usize> Buffer<T> for External<'a, T, N> {
     fn as_slice(&self) -> &[T] {
       self.buf
     }
@@ -67,7 +67,7 @@ impl private::Sealed for Stack {}
 
 impl ModeTag for Stack {
   type Buf<'a, T, const N: usize>
-    = buffer::StackBuf<T, N>
+    = buffer::Stack<T, N>
   where
     T: 'a;
 }
@@ -78,7 +78,7 @@ impl private::Sealed for Heap {}
 
 impl ModeTag for Heap {
   type Buf<'a, T, const N: usize>
-    = buffer::HeapBuf<T, N>
+    = buffer::Heap<T, N>
   where
     T: 'a;
 }
@@ -89,7 +89,7 @@ impl private::Sealed for External {}
 
 impl ModeTag for External {
   type Buf<'a, T, const N: usize>
-    = buffer::ExternalBuf<'a, T, N>
+    = buffer::External<'a, T, N>
   where
     T: 'a;
 }
@@ -108,7 +108,7 @@ where
 {
   pub fn new() -> Self {
     Self {
-      inner: buffer::StackBuf {
+      inner: buffer::Stack {
         buf: array::from_fn(|_| Default::default()),
       },
     }
@@ -130,7 +130,7 @@ where
 {
   pub fn new() -> Self {
     Self {
-      inner: buffer::HeapBuf {
+      inner: buffer::Heap {
         buf: iter::repeat_with(Default::default)
           .take(N)
           .collect::<Box<[T]>>()
@@ -157,7 +157,7 @@ where
 {
   pub fn new(buf: &'a mut [T; N]) -> Self {
     Self {
-      inner: buffer::ExternalBuf { buf },
+      inner: buffer::External { buf },
     }
   }
 }
