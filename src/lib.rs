@@ -7,6 +7,7 @@ mod buffer {
     fn as_mut_slice(&mut self) -> &mut [T];
   }
 
+  #[repr(transparent)]
   pub struct StackBuf<T, const N: usize> {
     pub buf: [T; N],
   }
@@ -93,6 +94,7 @@ impl ModeTag for External {
     T: 'a;
 }
 
+#[repr(transparent)]
 pub struct Buffer<'a, M, T: 'a, const N: usize>
 where
   M: ModeTag,
