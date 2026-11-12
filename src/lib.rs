@@ -7,46 +7,39 @@ mod buffer {
     fn as_mut_slice(&mut self) -> &mut [T];
   }
 
-  #[repr(transparent)]
-  pub struct Stack<T, const N: usize> {
-    pub buf: [T; N],
-  }
+  pub type Stack<T, const N: usize> = [T; N];
 
   impl<T, const N: usize> Buffer<T> for Stack<T, N> {
     fn as_slice(&self) -> &[T] {
-      &self.buf
+      self.as_ref()
     }
 
     fn as_mut_slice(&mut self) -> &mut [T] {
-      &mut self.buf
+      self.as_mut()
     }
   }
 
-  pub struct Heap<T, const N: usize> {
-    pub buf: Box<[T; N]>,
-  }
+  pub type Heap<T, const N: usize> = Box<[T; N]>;
 
   impl<T, const N: usize> Buffer<T> for Heap<T, N> {
     fn as_slice(&self) -> &[T] {
-      self.buf.as_slice()
+      self.as_ref()
     }
 
     fn as_mut_slice(&mut self) -> &mut [T] {
-      self.buf.as_mut_slice()
+      self.as_mut()
     }
   }
 
-  pub struct Borrowed<'a, T, const N: usize> {
-    pub buf: &'a mut [T; N],
-  }
+  pub type Borrowed<'a, T, const N: usize> = &'a mut [T; N];
 
   impl<'a, T, const N: usize> Buffer<T> for Borrowed<'a, T, N> {
     fn as_slice(&self) -> &[T] {
-      self.buf
+      self.as_ref()
     }
 
     fn as_mut_slice(&mut self) -> &mut [T] {
-      self.buf
+      self.as_mut()
     }
   }
 }
@@ -108,9 +101,7 @@ where
 {
   pub fn new() -> Self {
     Self {
-      inner: buffer::Stack {
-        buf: array::from_fn(|_| Default::default()),
-      },
+      inner: array::from_fn(|_| Default::default()),
     }
   }
 }
@@ -130,14 +121,12 @@ where
 {
   pub fn new() -> Self {
     Self {
-      inner: buffer::Heap {
-        buf: iter::repeat_with(Default::default)
-          .take(N)
-          .collect::<Box<[T]>>()
-          .try_into()
-          // safety; we take exactly N, just hoping compiler elides len check
-          .unwrap_or_else(|_| unreachable!()),
-      },
+      inner: iter::repeat_with(Default::default)
+        .take(N)
+        .collect::<Box<[T]>>()
+        .try_into()
+        // safety; we take exactly N, just hoping compiler elides len check
+        .unwrap_or_else(|_| unreachable!()),
     }
   }
 }
@@ -156,9 +145,7 @@ where
   T: 'a,
 {
   pub fn new(buf: &'a mut [T; N]) -> Self {
-    Self {
-      inner: buffer::Borrowed { buf },
-    }
+    Self { inner: buf }
   }
 }
 
