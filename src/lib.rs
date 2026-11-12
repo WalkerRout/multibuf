@@ -151,7 +151,7 @@ where
 
 impl<'a, T, const N: usize> Buffer<'a, External, T, N>
 where
-  T: Default + 'a,
+  T: 'a,
 {
   pub fn new(buf: &'a mut [T; N]) -> Self {
     Self {
