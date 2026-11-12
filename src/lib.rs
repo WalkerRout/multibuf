@@ -36,11 +36,11 @@ mod buffer {
     }
   }
 
-  pub struct External<'a, T, const N: usize> {
+  pub struct Borrowed<'a, T, const N: usize> {
     pub buf: &'a mut [T; N],
   }
 
-  impl<'a, T, const N: usize> Buffer<T> for External<'a, T, N> {
+  impl<'a, T, const N: usize> Buffer<T> for Borrowed<'a, T, N> {
     fn as_slice(&self) -> &[T] {
       self.buf
     }
@@ -83,13 +83,13 @@ impl ModeTag for Heap {
     T: 'a;
 }
 
-pub enum External {}
+pub enum Borrowed {}
 
-impl private::Sealed for External {}
+impl private::Sealed for Borrowed {}
 
-impl ModeTag for External {
+impl ModeTag for Borrowed {
   type Buf<'a, T, const N: usize>
-    = buffer::External<'a, T, N>
+    = buffer::Borrowed<'a, T, N>
   where
     T: 'a;
 }
@@ -151,13 +151,13 @@ where
   }
 }
 
-impl<'a, T, const N: usize> Buffer<'a, External, T, N>
+impl<'a, T, const N: usize> Buffer<'a, Borrowed, T, N>
 where
   T: 'a,
 {
   pub fn new(buf: &'a mut [T; N]) -> Self {
     Self {
-      inner: buffer::External { buf },
+      inner: buffer::Borrowed { buf },
     }
   }
 }
