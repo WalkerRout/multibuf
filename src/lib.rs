@@ -6,9 +6,9 @@ use std::marker::PhantomData;
 mod buffer {
   use std::borrow::BorrowMut;
 
-  pub type Stack<T, const N: usize> = [T; N];
+  pub type Inline<T, const N: usize> = [T; N];
 
-  pub type Heap<T, const N: usize> = Box<[T; N]>;
+  pub type Boxed<T, const N: usize> = Box<[T; N]>;
 
   pub type Borrowed<'a, T, const N: usize> = &'a mut [T; N];
 
@@ -33,20 +33,20 @@ pub trait ModeTag<T, const N: usize>: private::Sealed {
   type Buf: buffer::Buffer<T, N>;
 }
 
-pub enum Stack {}
+pub enum Inline {}
 
-impl private::Sealed for Stack {}
+impl private::Sealed for Inline {}
 
-impl<T, const N: usize> ModeTag<T, N> for Stack {
-  type Buf = buffer::Stack<T, N>;
+impl<T, const N: usize> ModeTag<T, N> for Inline {
+  type Buf = buffer::Inline<T, N>;
 }
 
-pub enum Heap {}
+pub enum Boxed {}
 
-impl private::Sealed for Heap {}
+impl private::Sealed for Boxed {}
 
-impl<T, const N: usize> ModeTag<T, N> for Heap {
-  type Buf = buffer::Heap<T, N>;
+impl<T, const N: usize> ModeTag<T, N> for Boxed {
+  type Buf = buffer::Boxed<T, N>;
 }
 
 // could use &'a ! but that still costs 8 bytes...
@@ -69,7 +69,7 @@ where
   inner: M::Buf,
 }
 
-impl<T, const N: usize> Buffer<Stack, T, N>
+impl<T, const N: usize> Buffer<Inline, T, N>
 where
   T: Default,
 {
@@ -80,7 +80,7 @@ where
   }
 }
 
-impl<T, const N: usize> Default for Buffer<Stack, T, N>
+impl<T, const N: usize> Default for Buffer<Inline, T, N>
 where
   T: Default,
 {
@@ -89,7 +89,7 @@ where
   }
 }
 
-impl<T, const N: usize> Buffer<Heap, T, N>
+impl<T, const N: usize> Buffer<Boxed, T, N>
 where
   T: Default,
 {
@@ -105,7 +105,7 @@ where
   }
 }
 
-impl<T, const N: usize> Default for Buffer<Heap, T, N>
+impl<T, const N: usize> Default for Buffer<Boxed, T, N>
 where
   T: Default,
 {
