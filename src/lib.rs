@@ -1,4 +1,5 @@
 use std::array;
+use std::convert::Infallible;
 use std::iter;
 use std::marker::PhantomData;
 
@@ -69,7 +70,8 @@ impl<T, const N: usize> ModeTag<T, N> for Heap {
   type Buf = buffer::Heap<T, N>;
 }
 
-pub struct Borrowed<'a>(PhantomData<&'a ()>);
+// could use &'a ! but that still costs 8 bytes...
+pub struct Borrowed<'a>(Infallible, PhantomData<&'a ()>);
 
 impl<'a> private::Sealed for Borrowed<'a> {}
 
