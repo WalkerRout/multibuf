@@ -4,46 +4,25 @@ use std::iter;
 use std::marker::PhantomData;
 
 mod buffer {
-  pub trait Buffer<T> {
-    fn as_slice(&self) -> &[T];
-    fn as_mut_slice(&mut self) -> &mut [T];
-  }
+  use std::borrow::BorrowMut;
 
   pub type Stack<T, const N: usize> = [T; N];
 
-  impl<T, const N: usize> Buffer<T> for Stack<T, N> {
-    fn as_slice(&self) -> &[T] {
-      self.as_ref()
-    }
-
-    fn as_mut_slice(&mut self) -> &mut [T] {
-      self.as_mut()
-    }
-  }
-
   pub type Heap<T, const N: usize> = Box<[T; N]>;
-
-  impl<T, const N: usize> Buffer<T> for Heap<T, N> {
-    fn as_slice(&self) -> &[T] {
-      self.as_ref()
-    }
-
-    fn as_mut_slice(&mut self) -> &mut [T] {
-      self.as_mut()
-    }
-  }
 
   pub type Borrowed<'a, T, const N: usize> = &'a mut [T; N];
 
-  impl<'a, T, const N: usize> Buffer<T> for Borrowed<'a, T, N> {
+  pub trait Buffer<T, const N: usize>: BorrowMut<[T; N]> {
     fn as_slice(&self) -> &[T] {
-      self.as_ref()
+      self.borrow()
     }
 
     fn as_mut_slice(&mut self) -> &mut [T] {
-      self.as_mut()
+      self.borrow_mut()
     }
   }
+
+  impl<T, B, const N: usize> Buffer<T, N> for B where B: BorrowMut<[T; N]> {}
 }
 
 mod private {
@@ -51,7 +30,7 @@ mod private {
 }
 
 pub trait ModeTag<T, const N: usize>: private::Sealed {
-  type Buf: buffer::Buffer<T>;
+  type Buf: buffer::Buffer<T, N>;
 }
 
 pub enum Stack {}
