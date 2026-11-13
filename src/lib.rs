@@ -1,5 +1,6 @@
 use std::array;
 use std::iter;
+use std::marker::PhantomData;
 
 mod buffer {
   pub trait Buffer<T> {
@@ -48,56 +49,48 @@ mod private {
   pub trait Sealed {}
 }
 
-pub trait ModeTag: private::Sealed {
-  type Buf<'a, T, const N: usize>: buffer::Buffer<T>
-  where
-    T: 'a;
+pub trait ModeTag<T, const N: usize>: private::Sealed {
+  type Buf: buffer::Buffer<T>;
 }
 
 pub enum Stack {}
 
 impl private::Sealed for Stack {}
 
-impl ModeTag for Stack {
-  type Buf<'a, T, const N: usize>
-    = buffer::Stack<T, N>
-  where
-    T: 'a;
+impl<T, const N: usize> ModeTag<T, N> for Stack {
+  type Buf = buffer::Stack<T, N>;
 }
 
 pub enum Heap {}
 
 impl private::Sealed for Heap {}
 
-impl ModeTag for Heap {
-  type Buf<'a, T, const N: usize>
-    = buffer::Heap<T, N>
-  where
-    T: 'a;
+impl<T, const N: usize> ModeTag<T, N> for Heap {
+  type Buf = buffer::Heap<T, N>;
 }
 
-pub enum Borrowed {}
+pub struct Borrowed<'a>(PhantomData<&'a ()>);
 
-impl private::Sealed for Borrowed {}
+impl<'a> private::Sealed for Borrowed<'a> {}
 
-impl ModeTag for Borrowed {
-  type Buf<'a, T, const N: usize>
-    = buffer::Borrowed<'a, T, N>
-  where
-    T: 'a;
+impl<'a, T, const N: usize> ModeTag<T, N> for Borrowed<'a>
+where
+  T: 'a,
+{
+  type Buf = buffer::Borrowed<'a, T, N>;
 }
 
 #[repr(transparent)]
-pub struct Buffer<'a, M, T: 'a, const N: usize>
+pub struct Buffer<M, T, const N: usize>
 where
-  M: ModeTag,
+  M: ModeTag<T, N>,
 {
-  inner: M::Buf<'a, T, N>,
+  inner: M::Buf,
 }
 
-impl<'a, T, const N: usize> Buffer<'a, Stack, T, N>
+impl<T, const N: usize> Buffer<Stack, T, N>
 where
-  T: Default + 'a,
+  T: Default,
 {
   pub fn new() -> Self {
     Self {
@@ -106,18 +99,18 @@ where
   }
 }
 
-impl<'a, T, const N: usize> Default for Buffer<'a, Stack, T, N>
+impl<T, const N: usize> Default for Buffer<Stack, T, N>
 where
-  T: Default + 'a,
+  T: Default,
 {
   fn default() -> Self {
     Self::new()
   }
 }
 
-impl<'a, T, const N: usize> Buffer<'a, Heap, T, N>
+impl<T, const N: usize> Buffer<Heap, T, N>
 where
-  T: Default + 'a,
+  T: Default,
 {
   pub fn new() -> Self {
     Self {
@@ -131,16 +124,16 @@ where
   }
 }
 
-impl<'a, T, const N: usize> Default for Buffer<'a, Heap, T, N>
+impl<T, const N: usize> Default for Buffer<Heap, T, N>
 where
-  T: Default + 'a,
+  T: Default,
 {
   fn default() -> Self {
     Self::new()
   }
 }
 
-impl<'a, T, const N: usize> Buffer<'a, Borrowed, T, N>
+impl<'a, T, const N: usize> Buffer<Borrowed<'a>, T, N>
 where
   T: 'a,
 {
@@ -149,9 +142,9 @@ where
   }
 }
 
-impl<'a, M: ModeTag, T, const N: usize> Buffer<'a, M, T, N>
+impl<M, T, const N: usize> Buffer<M, T, N>
 where
-  T: 'a,
+  M: ModeTag<T, N>,
 {
   pub fn as_slice(&self) -> &[T] {
     buffer::Buffer::as_slice(&self.inner)
